@@ -59,9 +59,11 @@ import java.util.stream.Stream;
 @CapabilityDescription("An HTTP client processor which will interact with a configurable HTTP Endpoint when azure.filename attribute of incoming flowfile is SUCCESS_YYYY_MM_DD.json . The destination URL and HTTP Method are configurable. FlowFile attributes are converted to HTTP headers and the FlowFile contents are included as the body of the request (if the HTTP Method is PUT, POST or PATCH).")
 public class SubmitSparkJobByFileNameProcessor extends InvokeHTTP {
     public static final String AZURE_FILENAME_ATTRIBUTE = "azure.filename";
+    public static final String DEFAULT_REGEX_SUCCESS_FILENAME = "^SUCCESS_((19|2[0-9])[0-9]{2})_(0[1-9]|1[012])_(0[1-9]|[12][0-9]|3[01]).json$";
     public static final PropertyDescriptor PROP_BODY;
     public static final PropertyDescriptor PROP_HEADERS;
     public static final List<PropertyDescriptor> NEW_PROPERTIES;
+    public static final PropertyDescriptor PROP_REGEX_FILENAME;
 
     static {
         PROP_BODY = (new PropertyDescriptor.Builder()).name("Body")
@@ -74,12 +76,22 @@ public class SubmitSparkJobByFileNameProcessor extends InvokeHTTP {
         PROP_HEADERS = (new PropertyDescriptor.Builder()).name("Headers")
                 .description("Rows are separated by new line. Keys and values are separated by : ")
                 .required(false)
+                .sensitive(true)
                 .addValidator(
                         StandardValidators
                                 .createAttributeExpressionLanguageValidator(AttributeExpression.ResultType.STRING))
                 .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
                 .build();
-        NEW_PROPERTIES = Stream.of(PROPERTIES, Arrays.asList(PROP_BODY, PROP_HEADERS)).flatMap(List::stream).collect(
+        PROP_REGEX_FILENAME = (new PropertyDescriptor.Builder()).name("Success Filename Regex")
+                .description("Regex value to check success file name to submit the rest API")
+                .defaultValue(DEFAULT_REGEX_SUCCESS_FILENAME)
+                .required(true)
+                .addValidator(
+                        StandardValidators
+                                .createAttributeExpressionLanguageValidator(AttributeExpression.ResultType.STRING))
+                .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+                .build();
+        NEW_PROPERTIES = Stream.of(PROPERTIES, Arrays.asList(PROP_BODY, PROP_HEADERS, PROP_REGEX_FILENAME)).flatMap(List::stream).collect(
                 Collectors.toList());
     }
 
@@ -176,10 +188,11 @@ public class SubmitSparkJobByFileNameProcessor extends InvokeHTTP {
         }
     }
 
-    public boolean shouldTrigger(FlowFile requestFlowFile) {
+    public boolean shouldTrigger(ProcessContext context, FlowFile requestFlowFile) {
         String filename = requestFlowFile.getAttribute(AZURE_FILENAME_ATTRIBUTE);
-        Pattern valid = Pattern.compile(
-                "^SUCCESS_((19|2[0-9])[0-9]{2})_(0[1-9]|1[012])_(0[1-9]|[12][0-9]|3[01]).json$");
+        String patternString = context.getProperty(PROP_REGEX_FILENAME).evaluateAttributeExpressions(requestFlowFile)
+                .getValue();
+        Pattern valid = Pattern.compile(patternString);
 
         if (valid.matcher(filename).matches()) {
             return true;
@@ -208,7 +221,7 @@ public class SubmitSparkJobByFileNameProcessor extends InvokeHTTP {
             }
         }
 
-        if (!shouldTrigger(requestFlowFile)) {
+        if (!shouldTrigger(context, requestFlowFile)) {
             session.remove(requestFlowFile);
             return;
         }
