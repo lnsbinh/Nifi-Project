@@ -27,6 +27,10 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <properties>
+        <nifi.version>1.14.0</nifi.version>
+    </properties>
+
     <modules>
         <module>nifi-submit-spark-job-processors</module>
         <module>nifi-submit-spark-job-nar</module>

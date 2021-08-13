@@ -20,7 +20,6 @@ import com.google.common.base.Strings;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.apache.nifi.flowfile.FlowFile;
-import org.apache.nifi.processor.SubmitSparkJobByFileNameProcessor;
 import org.apache.nifi.processors.standard.InvokeHTTP;
 import org.junit.Before;
 import org.junit.Test;
