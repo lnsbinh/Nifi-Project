@@ -36,8 +36,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class SubmitSparkJobByFileNameProcessorTest extends InvokeHTTPTest {
-    private final String headerValue = "Authorization:Bearer abc\n"
-            + "key2:abc\n"
+    private final String headerValue = "key2:abc\n"
             + "Key3:def";
 
     private final String bodyValue = ""
@@ -66,6 +65,7 @@ public class SubmitSparkJobByFileNameProcessorTest extends InvokeHTTPTest {
         runner.setProperty(InvokeHTTP.PROP_METHOD, POST_METHOD);
         runner.setProperty(SubmitSparkJobByFileNameProcessor.PROP_HEADERS, headerValue);
         runner.setProperty(SubmitSparkJobByFileNameProcessor.PROP_BODY, bodyValue);
+        runner.setProperty(SubmitSparkJobByFileNameProcessor.PROP_API_TOKEN, "abc");
 
         setUrlProperty();
         mockWebServer.enqueue(new MockResponse().setResponseCode(HTTP_OK));
@@ -97,6 +97,7 @@ public class SubmitSparkJobByFileNameProcessorTest extends InvokeHTTPTest {
         runner.setProperty(InvokeHTTP.PROP_METHOD, POST_METHOD);
         runner.setProperty(SubmitSparkJobByFileNameProcessor.PROP_HEADERS, headerValue);
         runner.setProperty(SubmitSparkJobByFileNameProcessor.PROP_BODY, bodyValue);
+        runner.setProperty(SubmitSparkJobByFileNameProcessor.PROP_API_TOKEN, "abc");
 
         final Map<String, String> attributes = new HashMap<>();
         attributes.put(SubmitSparkJobByFileNameProcessor.AZURE_FILENAME_ATTRIBUTE,

@@ -62,6 +62,7 @@ public class SubmitSparkJobByFileNameProcessor extends InvokeHTTP {
     public static final String DEFAULT_REGEX_SUCCESS_FILENAME = "^SUCCESS_((19|2[0-9])[0-9]{2})_(0[1-9]|1[012])_(0[1-9]|[12][0-9]|3[01]).json$";
     public static final PropertyDescriptor PROP_BODY;
     public static final PropertyDescriptor PROP_HEADERS;
+    public static final PropertyDescriptor PROP_API_TOKEN;
     public static final List<PropertyDescriptor> NEW_PROPERTIES;
     public static final PropertyDescriptor PROP_REGEX_FILENAME;
 
@@ -75,6 +76,14 @@ public class SubmitSparkJobByFileNameProcessor extends InvokeHTTP {
                 .build();
         PROP_HEADERS = (new PropertyDescriptor.Builder()).name("Headers")
                 .description("Rows are separated by new line. Keys and values are separated by : ")
+                .required(false)
+                .addValidator(
+                        StandardValidators
+                                .createAttributeExpressionLanguageValidator(AttributeExpression.ResultType.STRING))
+                .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+                .build();
+        PROP_API_TOKEN = (new PropertyDescriptor.Builder()).name("API Token")
+                .description("Regex value to check success file name to submit the rest API")
                 .required(false)
                 .sensitive(true)
                 .addValidator(
@@ -91,7 +100,7 @@ public class SubmitSparkJobByFileNameProcessor extends InvokeHTTP {
                                 .createAttributeExpressionLanguageValidator(AttributeExpression.ResultType.STRING))
                 .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
                 .build();
-        NEW_PROPERTIES = Stream.of(PROPERTIES, Arrays.asList(PROP_BODY, PROP_HEADERS, PROP_REGEX_FILENAME)).flatMap(List::stream).collect(
+        NEW_PROPERTIES = Stream.of(PROPERTIES, Arrays.asList(PROP_BODY, PROP_HEADERS, PROP_API_TOKEN, PROP_REGEX_FILENAME)).flatMap(List::stream).collect(
                 Collectors.toList());
     }
 
@@ -155,6 +164,7 @@ public class SubmitSparkJobByFileNameProcessor extends InvokeHTTP {
                     url);
             String body = context.getProperty(PROP_BODY).evaluateAttributeExpressions(requestFlowFile).getValue();
             String headers = context.getProperty(PROP_HEADERS).evaluateAttributeExpressions(requestFlowFile).getValue();
+            String apiToken = context.getProperty(PROP_API_TOKEN).evaluateAttributeExpressions(requestFlowFile).getValue();
 
             if (Strings.isNullOrEmpty(body)) {
                 return httpRequest;
@@ -172,6 +182,10 @@ public class SubmitSparkJobByFileNameProcessor extends InvokeHTTP {
                     // Replace value if exists
                     httpRequestBuilder.header(arr[0], arr[1]);
                 }
+            }
+
+            if (!Strings.isNullOrEmpty(apiToken)) {
+                httpRequestBuilder.header("Authorization", "Bearer " + apiToken);
             }
 
             httpRequestBuilder.method(httpRequest.method(),
